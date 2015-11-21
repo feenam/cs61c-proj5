@@ -1,3 +1,31 @@
+# [(1, (1.0, [2,3,4]))]
+# [(2, (1.0, [3,4]))]
+# [(3, (1.0, [1,4]))]
+# [(4, (1.0, [1]))]
+
+# --> flatMap --> 
+
+# [(1 (0.05, [2, 3, 4])), (2 (1.0, [])),  (3 (1.0, [])),  (4 (1.0, []))]
+# [(1 (1.0, [])), (2 (0.05, [3, 4])), (3 (1.0, [])),  (4 (1.0, []))]
+# [(1 (1.0, [])), (2 (1.0, [])), (3 (0.05, [1, 4])),  (4 (1.0, []))]
+# [(1 (1.0, [])), (2 (1.0, [])), (3 (1.0, [])),  (4 (0.05, [1]))]
+
+# --> groupByKey -->
+
+# (1, ((0.05, [2, 3, 4]), (1.0, []), (1.0, []), (1.0, [])))
+# (2, (1.0, [])), 
+# (3, (1.0, [])), (1.0, [])), 
+# (4, (1.0, []), (1.0, []), (1.0, []) , (1.0, []))
+
+# --> map --> 
+
+# - (1 (3.05, [2, 3, 4])), 
+# - (2 (1.0, [3, 5])), 
+# - (3 (1.0, [])), 
+# - (4 (1.0, []))
+
+# (1 (2.0, [2, 3, 4]))
+
 """
 This class implements the simple pagerank algorithm
 as described in the first part of the project.
@@ -98,7 +126,16 @@ class SimplePageRank(object):
         """
         def distribute_weights((node, (weight, targets))):
             # YOUR CODE HERE
-            return []        
+            stayWeight = weight * 0.05 + 0.1        # Dampening Factor 
+            if targets:
+                newWeight = weight * 0.85 / len(targets)
+            else:
+                newWeight = weight * 0.85 / (num_nodes - 1)
+            output = []
+            for t in targets:
+                    output.append((t, (newWeight, [])))
+            output.append((node, (stayWeight, targets)))
+            return output     
 
         """
         Reducer phase.
@@ -112,7 +149,12 @@ class SimplePageRank(object):
         """
         def collect_weights((node, values)):
             # YOUR CODE HERE
-            return []
+            weight = 0
+            targets = []
+            for v in values:
+                weight += v[0] 
+                targets += v[1]
+            return (node, (weight, targets))
 
         return nodes\
                 .flatMap(distribute_weights)\
@@ -131,3 +173,4 @@ class SimplePageRank(object):
                 .map(lambda (node, (weight, targets)): (weight, node))\
                 .sortByKey(ascending = False)\
                 .map(lambda (weight, node): (node, weight))
+
